@@ -20,7 +20,7 @@ class CMLNetKitConfig:
     port = None
     username = None
     password = None
-    ssl_verify = False
+    ssl_verify = True
 
     # Parameters for changing the "External Connection" objects
     change_bridge = False
