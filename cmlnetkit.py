@@ -29,10 +29,12 @@ def main():
                                   default=True, action="store_false")
     group_changes.add_argument('-b',
                                help='Changing all "External Connection" objects configuration to "Bridge"',
-                               dest="conf_ext_bridge", default=False, action="store_true")
+                               dest="update_bridge", default=False, action="store_true")
+    group_changes.add_argument('-lo',
+                               help='Readdress all Loopback0 interfaces withput IPv4 address',
+                               dest="update_loopback", default=False, action="store_true")
 
-    cml_net_kit_config_current = CMLNetKitConfig.CMLNetKitConfig(parser.parse_args())
-    CMLNetKit.CMLNetKit(cml_net_kit_config_current)
+    CMLNetKit.CMLNetKit(CMLNetKitConfig.CMLNetKitConfig(parser.parse_args()))
 
 
 if __name__ == '__main__':

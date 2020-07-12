@@ -22,8 +22,10 @@ class CMLNetKitConfig:
     password = None
     ssl_verify = True
 
-    # Parameters for changing the "External Connection" objects
-    change_bridge = False
+    # Flag if requested to change "External Connection" objects
+    update_bridge = False
+    # Flag if requested to change the Loopback interfaces configuration
+    update_loopback = False
 
     def __init__(self, args):
         self.host = args.host
@@ -34,3 +36,9 @@ class CMLNetKitConfig:
 
         if args.lab_id is not None:
             self.lab_id = args.lab_id
+
+        if args.update_bridge is True:
+            self.update_bridge = True
+
+        if args.update_loopback is True:
+            self.update_loopback = True

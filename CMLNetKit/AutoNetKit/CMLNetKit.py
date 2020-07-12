@@ -4,6 +4,7 @@
 
 import yaml
 from virl2_client import ClientLibrary
+from ciscoconfparse import CiscoConfParse
 
 
 class CMLNetKit(object):
@@ -15,21 +16,23 @@ class CMLNetKit(object):
     """
 
     lab_conf = None
-    args = None
+    lab_handler = None
+    _cmlnetkitconfig = None
 
     lab_conf_changed = False
 
     def __init__(self, cml_options):
         super(CMLNetKit, self).__init__()
 
-        self.args = cml_options
+        self._cmlnetkitconfig = cml_options
 
-        if self.args.lab_id is None:
+        if self._cmlnetkitconfig.lab_id is None:
             self.print_labs()
             exit(0)
 
         self.lab_download()
-        if self.args.conf_ext_bridge:
+
+        if self._cmlnetkitconfig.update_bridge is True:
             self.update_bridge()
 
         if self.lab_conf_changed is True:
@@ -46,14 +49,16 @@ class CMLNetKit(object):
         :raises requests.exceptions.HTTPError: if there was a transport error
         """
 
-        cl = ClientLibrary(url="https://" + self.args.host, username=self.args.username,
-                           password=self.args.password,
-                           ssl_verify=self.args.ssl_verify)
+        cl = ClientLibrary(url="https://" + self._cmlnetkitconfig.host, username=self._cmlnetkitconfig.username,
+                           password=self._cmlnetkitconfig.password,
+                           ssl_verify=self._cmlnetkitconfig.ssl_verify)
         cl.wait_for_lld_connected()
         try:
-            # self.lab_conf = cl.export_lab(lab_id=self.args.lab_id)
-            lab = cl.join_existing_lab(self.args.lab_id)
-            self.lab_conf = yaml.safe_load(lab.download())
+            # self.lab_conf = cl.export_lab(lab_id=self._cmlnetkitconfig.lab_id)
+            # lab = cl.join_existing_lab(self._cmlnetkitconfig.lab_id)
+            # self.lab_conf = yaml.safe_load(lab.download())
+            self.lab_handler = cl.join_existing_lab(self._cmlnetkitconfig.lab_id)
+            self.lab_conf = yaml.safe_load(self.lab_handler.download())
         except TypeError:
             print("TypeError: No lab_id provided. Use the -l option to provide the lab_id")
 
@@ -64,9 +69,9 @@ class CMLNetKit(object):
         :raises requests.exceptions.HTTPError: if there was a transport error
         """
 
-        cl = ClientLibrary(url="https://" + self.args.host, username=self.args.username,
-                           password=self.args.password,
-                           ssl_verify=self.args.ssl_verify)
+        cl = ClientLibrary(url="https://" + self._cmlnetkitconfig.host, username=self._cmlnetkitconfig.username,
+                           password=self._cmlnetkitconfig.password,
+                           ssl_verify=self._cmlnetkitconfig.ssl_verify)
         cl.wait_for_lld_connected()
         self.lab_conf = cl.import_lab(topology=yaml.dump(self.lab_conf), title=self.lab_conf["lab"]["title"])
 
@@ -88,9 +93,9 @@ class CMLNetKit(object):
         :raises requests.exceptions.HTTPError: if there was a transport error
         """
 
-        cl = ClientLibrary(url="https://" + self.args.host, username=self.args.username,
-                           password=self.args.password,
-                           ssl_verify=self.args.ssl_verify)
+        cl = ClientLibrary(url="https://" + self._cmlnetkitconfig.host, username=self._cmlnetkitconfig.username,
+                           password=self._cmlnetkitconfig.password,
+                           ssl_verify=self._cmlnetkitconfig.ssl_verify)
         cl.wait_for_lld_connected()
         labs = cl.all_labs()
         print('\nLab ID\tLab Title')
