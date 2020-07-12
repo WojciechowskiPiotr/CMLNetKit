@@ -4,7 +4,6 @@
 
 import yaml
 from virl2_client import ClientLibrary
-from ciscoconfparse import CiscoConfParse
 
 
 class CMLNetKit(object):
