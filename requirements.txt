@@ -2,6 +2,8 @@ virl2-client
 urllib3
 PyYAML
 ciscoconfparse
+netaddr
+
 
 
 
