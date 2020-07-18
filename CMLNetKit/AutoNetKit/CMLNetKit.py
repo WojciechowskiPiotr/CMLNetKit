@@ -28,6 +28,16 @@ class CMLNetKit(object):
     _node_csr1000v_fn = 'update_node_loopback_conf_csr1000v'
     _node_types_fn = {}
 
+    _node_management_interface_name = {'iosv': 'GigabitEthernet0/0',
+                                       'csr1000v': 'GigabitEthernet1',
+                                       'iosxrv': 'MgmtEth0/0/CPU0/0',
+                                       'iosxrv9000': 'MgmtEth0/RP0/CPU0/0',
+                                       'nxosv': 'mgmt0',
+                                       'nxosv9000': 'mgmt0',
+                                       'iosvl2': 'GigabitEthernet0/0',
+                                       'asav': 'Management0/0',
+                                       }
+
     def __init__(self, cml_options):
         super(CMLNetKit, self).__init__()
 
@@ -41,7 +51,17 @@ class CMLNetKit(object):
                                'update_node_loopback_conf_nxosv': self.update_node_loopback_conf_iosv,
                                'update_node_loopback_conf_nxosv9000': self.update_node_loopback_conf_iosv,
                                'update_node_loopback_conf_iosvl2': self.update_node_loopback_conf_iosv,
-                               'update_node_loopback_conf_asav': self.dummy
+                               'update_node_loopback_conf_asav': self.dummy,
+                               'update_node_loopback_conf_external_connector': self.dummy,
+                               'update_node_management_conf_iosv': self.update_node_management_conf_iosv,
+                               'update_node_management_conf_csr1000v': self.dummy,
+                               'update_node_management_conf_iosxrv': self.dummy,
+                               'update_node_management_conf_iosxrv9000': self.dummy,
+                               'update_node_management_conf_nxosv': self.dummy,
+                               'update_node_management_conf_nxosv9000': self.dummy,
+                               'update_node_management_conf_iosvl2': self.dummy,
+                               'update_node_management_conf_asav': self.dummy,
+                               'update_node_management_conf_external_connector': self.dummy,
                                }
 
         self._cmlnetkitconfig = cml_options
@@ -56,7 +76,10 @@ class CMLNetKit(object):
             self.update_bridge()
 
         if self._cmlnetkitconfig.update_loopback is True:
-            self.update_loopbacks()
+            self.update_device_loopback_conf()
+
+        if self._cmlnetkitconfig.update_mgmt is True:
+            self.update_device_management_conf()
 
         if self.lab_conf_changed is True:
             self.lab_upload()
@@ -211,7 +234,7 @@ class CMLNetKit(object):
         for lab in labs:
             print(lab.id + '\t' + lab.title)
 
-    def update_loopbacks(self):
+    def update_device_loopback_conf(self):
         """
         Updates the Loopback interfaces configuration for nodes in the lab topology.
 
@@ -228,6 +251,39 @@ class CMLNetKit(object):
         except IndexError as e:
             print("IndexError: loopback_subnet: The subnet is to small to enumerate all Loopback interfaces")
             exit(0)
+
+    def update_device_management_conf(self):
+        """
+        Updates the management interfaces configuration for nodes in the lab topology.
+
+        For each node it will call the platform specific method to update Loopback interface address
+        from provided subnet using the next available address for each device.
+        """
+        try:
+            for nodenum, nodedef in enumerate(self.lab_conf["nodes"]):
+                try:
+                    ip = netaddr.IPNetwork(self._cmlnetkitconfig.mgmt_range[nodenum])
+                except netaddr.AddrFormatError as e:
+                    raise ValueError("%s" % e)
+                except IndexError as e:
+                    raise IndexError("mgmt-range: Not enough management addresses provided")
+                ip.prefixlen = self._cmlnetkitconfig.mgmt_prefixlen
+
+                # We find the method to call using the self._node_types_fm dictionary
+                try:
+                    print(self._get_node_index_by_label(nodedef.get("label")))
+                    print(self._get_node_type(
+                        self._get_node_index_by_label(nodedef.get("label"))))
+                    print(self._node_types_fn["update_node_management_conf_" + self._get_node_type(
+                        self._get_node_index_by_label(nodedef.get("label")))])
+
+                    self._node_types_fn["update_node_management_conf_" + self._get_node_type(
+                        self._get_node_index_by_label(nodedef.get("label")))] \
+                        (nodedef.get("label"), ip.ip.__str__(), ip.netmask.__str__())
+                except TypeError as e:
+                    raise TypeError(e)
+        except IndexError as e:
+            raise IndexError("mgmt-range: Not enough management addresses provided")
 
     def update_node_loopback_conf_iosv(self, node_label=None, ip_addr=None):
         """
@@ -289,6 +345,44 @@ class CMLNetKit(object):
                                             excludespec=r'no shutdown')
         node_parsed_config.replace_children(r'^interface\sLoopback0', r'description to',
                                             r'description Loopback interface')
+        node_parsed_config.atomic()
+        node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
+        self._set_node_config(self._get_node_index_by_label(node_label), node_new_config)
+        self.lab_conf_changed = True
+
+    def update_node_management_conf_iosv(self, node_label=None, ip_addr=None, ip_netmask=None):
+        """
+        Update the IP address, description and shutdown state configuration of Gigabit0/0 interface
+        if no IP address is assigned. There is no dedicated OOB Management interface so we take
+        first one. If should be connected to "External Connection" object and common management subnet
+
+        :param node_label: The node label
+        :type node_label: str
+        :param ip_addr: The IP address that will be assigned to te interface of the device and subnet mask
+        :type ip_addr: str
+        :param ip_netmask: The subnet mask in dot notation
+        :type ip_netmask: str
+        """
+
+        if node_label is None or ip_addr is None or ip_netmask is None:
+            raise ValueError
+        if type(ip_addr) is not str or type(node_label) is not str or type(ip_netmask) is not str:
+            raise TypeError
+
+        node_config = self._get_node_config(self._get_node_index_by_label(node_label))
+        node_parsed_config = CiscoConfParse(node_config.split('\n'))
+
+        # Don't update the interface configuration if IP address is already set
+        if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\sGigabitEthernet0/0')):
+            return
+
+        node_parsed_config.replace_children(r'^interface\sGigabitEthernet0/0', r'no ip address',
+                                            r'ip address ' + ip_addr + ' ' + ip_netmask)
+        node_parsed_config.replace_children(r'^interface\sGigabitEthernet0/0', r'shutdown', r'no shutdown',
+                                            excludespec=r'no shutdown')
+        node_parsed_config.replace_children(r'^interface\sGigabitEthernet0/0', r'description to',
+                                            r'description Management interface')
+
         node_parsed_config.atomic()
         node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
         self._set_node_config(self._get_node_index_by_label(node_label), node_new_config)
