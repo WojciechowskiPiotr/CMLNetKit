@@ -65,7 +65,8 @@ class CMLNetKit(object):
 
     def lab_upload(self):
         """
-        Upload topology from the self.lab_conf class variable to CML2 server as a new lab.
+        Upload topology from the self.lab_conf class variable to CML2 server as a new lab, except if
+        'dry run' mode is active.
 
         :raises requests.exceptions.HTTPError: if there was a transport error
         """
@@ -91,28 +92,62 @@ class CMLNetKit(object):
                 self.lab_conf_changed = True
 
     def _get_node_index_by_label(self, node_name):
+        """
+        Search for the node in nodes definitions by the label and return the index on the list when found
+
+        :param node_name: Node name
+        :type: node_name: str
+        :returns: Array index for the node
+        :rtype: Integer
+        """
         for nodenum, nodedef in enumerate(self.lab_conf["nodes"]):
             if nodedef.get("label") == node_name:
                 return nodenum
 
     def _get_node_index_by_id(self, node_id):
+        """
+        Search for the node in nodes definitions by the id and return the index on the list when found
+
+        :param node_id: Node name
+        :type: node_id: str
+        :returns: Array index for the node
+        :rtype: Integer
+        """
         for nodenum, nodedef in enumerate(self.lab_conf["nodes"]):
             if nodedef.get("id") == node_id:
                 return nodenum
 
     def _get_node_config(self, node_index):
+        """
+        Read startup node configuration from lab configuration
+
+        :param node_index: Node index in the configuration list
+        :type node_index: int
+        :return: Specific node configuration extracted from lab configuration
+        :rtype: str
+        """
         return self.lab_conf["nodes"][node_index]["configuration"]
 
     def _set_node_config(self, node_index, node_config):
+        """
+        Replaces the node startup configuration for specific node in lab configuration
+
+        :param node_index: Node index in the configuration list
+        :type node_index: int
+        :param node_config: Node configuration
+        :type node_config: str
+        """
         self.lab_conf["nodes"][node_index]["configuration"] = node_config
 
     @staticmethod
     def _iface_ip_addr_defined(iface_conf=None):
         """
-        Returns True if IP address is assigned in interface configuration
+        Checks if IP address is defined in the provided interface configuration
 
-        :param iface_conf: Array of interface configuration lines
-        :return: Bool
+        :param iface_conf: List of interface configuration lines
+        :type iface_conf: list
+        :return: False if IP address is not defined, otherwise return Tue
+        :rtype: Bool
         """
         if iface_conf is None:
             iface_conf = []
