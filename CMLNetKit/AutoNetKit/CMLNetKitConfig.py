@@ -45,6 +45,9 @@ class CMLNetKitConfig:
         if args.update_loopback is True:
             self.update_loopback = True
 
+        # Initialize the variable that stores subnet for adressing Loopback interfaces.
+        # We need to check if /32 mask was not provided, the subnet is IPv4, unicast and provided
+        # in correct CIDR format. In case any requirement is violated the program cannot continue
         if type(args.loopback_subnet) is not str:
             raise TypeError
         try:
@@ -53,13 +56,13 @@ class CMLNetKitConfig:
             print("Parameter error: loopback_subnet:", e.data)
             exit(0)
         except netaddr.AddrFormatError as e:
-            print("Parameter format error: loopback_subnet: Address format error")
+            print("Parameter error: loopback_subnet: Address format error")
             exit(0)
         else:
             if not prefix.is_unicast():
-                print("Parameter format error: loopback_subnet: Non-unicast address")
+                print("Parameter error: loopback_subnet: Non-unicast address")
                 exit(0)
             if prefix.prefixlen == 32:
-                print("Parameter format error: loopback_subnet: Host address provided")
+                print("Parameter error: loopback_subnet: Host address provided")
                 exit(0)
             self.loopback_subnet = args.loopback_subnet
