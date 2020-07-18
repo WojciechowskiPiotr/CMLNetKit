@@ -128,6 +128,17 @@ class CMLNetKit(object):
         """
         return self.lab_conf["nodes"][node_index]["configuration"]
 
+    def _get_node_type(self, node_index):
+        """
+        Read the node type stored as node_definition key in lab configuration for specified node
+
+        :param node_index: Node index in the configuration list
+        :type node_index: int
+        :return: Node type stored in node_definition
+        :rtype: str
+        """
+        return self.lab_conf["nodes"][node_index]["node_definition"]
+
     def _set_node_config(self, node_index, node_config):
         """
         Replaces the node startup configuration for specific node in lab configuration
