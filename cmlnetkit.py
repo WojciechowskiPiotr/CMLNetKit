@@ -36,14 +36,41 @@ def main():
     group_changes.add_argument('-lo',
                                help='Readdress all Loopback0 interfaces without IPv4 address',
                                dest="update_loopback", default=False, action="store_true")
-    group_changes.add_argument('-lo_subnet',
+    group_changes.add_argument('--lo-subnet',
                                help='Subnet for the Loopback ip addresses assignment, must be provided in format as '
                                     'subnet/mask. If mask not provided default mask for subnet is used.'
                                     'If none provided the default 10.0.0.0/24 is used. Loopback '
                                     'addresses are always /32',
                                dest="loopback_subnet", default="10.0.0.0/24")
+    group_changes.add_argument('-mgmt',
+                               help='Readdress all management interfaces without IPv4 address. If device do not'
+                                    'have dedicated management interface then first GigabitEthernet is used.',
+                               dest="update_mgmt", default=False, action="store_true")
+    group_changes.add_argument('--mgmt-range',
+                               help='Contiguous range of IP addresses must be provided. As argument values provide '
+                                    'first and last IP address of the range',
+                               nargs=2, metavar=('MGMT_IP_LOW', "MGMT_IP_HIGH"), dest="mgmt_range")
+    group_changes_mask_prefixlen = group_changes.add_mutually_exclusive_group()
+    group_changes_mask_prefixlen.add_argument('--mgmt-netmask',
+                                              help='Subnet mask that needs to be assigned to management interfaces IP '
+                                                   'addresses on devices. Mask must be provided in standard netmask '
+                                                   'notation 255.255.255.0 If neither -mgmt-netmask nor '
+                                                   '-mgmt-prefixlen is provided then /24 prefixlen (mask of '
+                                                   '255.255.255.0) is assigned.',
+                                              dest="mgmt_netmask", type=str)
+    group_changes_mask_prefixlen.add_argument('--mgmt-prefixlen',
+                                              help='Subnet mask that needs to be assigned to management interfaces IP '
+                                                   'addresses on devices. Prefixlen must be provided as integer '
+                                                   'between 0 and 32. If neither -mgmt-netmask nor -mgmt-prefixlen is '
+                                                   'provided then /24 prefixlen (mask of 255.255.255.0) is assigned.',
+                                              dest="mgmt_prefixlen", type=int)
 
-    CMLNetKit.CMLNetKit(CMLNetKitConfig.CMLNetKitConfig(parser.parse_args()))
+    p = parser.parse_args()
+    if (p.mgmt_netmask or p.mgmt_prefixlen) and not p.mgmt_range:
+        parser.error("Missing the --mgmt-range parameter required when providing either --mgmt-netmask or "
+                     "--mgmt-prefixlen")
+
+    CMLNetKit.CMLNetKit(CMLNetKitConfig.CMLNetKitConfig(p))
 
 
 if __name__ == '__main__':
