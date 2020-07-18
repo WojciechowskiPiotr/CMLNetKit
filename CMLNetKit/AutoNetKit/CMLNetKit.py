@@ -22,8 +22,27 @@ class CMLNetKit(object):
 
     lab_conf_changed = False
 
+    # Some static definitions
+    _node_types = ['iosv', 'csr1000v', 'iosxrv', 'iosxrv9000', 'nxosv', 'nxosv9000']
+    _node_iosv_fn = 'update_node_loopback_conf_iosv'
+    _node_csr1000v_fn = 'update_node_loopback_conf_csr1000v'
+    _node_types_fn = {}
+
     def __init__(self, cml_options):
         super(CMLNetKit, self).__init__()
+
+        # Define functions to call for particular device type identified by node_definition key in the node
+        # configuration downloaded from CML2 server. In some cases, we will call the dummy method because the proper
+        # method is not yet implemented. In other cases, the same method applies to more than one node type.
+        self._node_types_fn = {'update_node_loopback_conf_iosv': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_csr1000v': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_iosxrv': self.update_node_loopback_conf_iosxrv,
+                               'update_node_loopback_conf_iosxrv9000': self.update_node_loopback_conf_iosxrv,
+                               'update_node_loopback_conf_nxosv': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_nxosv9000': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_iosvl2': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_asav': self.dummy
+                               }
 
         self._cmlnetkitconfig = cml_options
 
@@ -43,6 +62,15 @@ class CMLNetKit(object):
             self.lab_upload()
         else:
             print("Lab configuration unchanged")
+
+    def dummy(self, *argv):
+        """
+        This dummy method gets all the arguments and does nothing. Required for future methods implementations
+        when need to call variable name function.
+
+        :param argv:
+        """
+        pass
 
     def lab_download(self):
         """
@@ -163,7 +191,7 @@ class CMLNetKit(object):
         if iface_conf is None:
             iface_conf = []
         for config_line in iface_conf:
-            if "no ip address" in config_line:
+            if "no ip address" or "no ipv4 address" in config_line:
                 return False
         return True
 
@@ -191,15 +219,17 @@ class CMLNetKit(object):
         from provided subnet using the next available address for each device.
         """
         ip = netaddr.IPNetwork(self._cmlnetkitconfig.loopback_subnet)
-
         try:
             for nodenum, nodedef in enumerate(self.lab_conf["nodes"]):
-                self.update_node_loopback_conf_ios(nodedef.get("label"), ip[nodenum + 1].__str__())
+                # We find the method to call using the self._node_types_fm dictionary
+                self._node_types_fn["update_node_loopback_conf_" + self._get_node_type(
+                    self._get_node_index_by_label(nodedef.get("label")))] \
+                    (nodedef.get("label"), ip[nodenum + 1].__str__())
         except IndexError as e:
             print("IndexError: loopback_subnet: The subnet is to small to enumerate all Loopback interfaces")
             exit(0)
 
-    def update_node_loopback_conf_ios(self, node_label=None, ip_addr=None):
+    def update_node_loopback_conf_iosv(self, node_label=None, ip_addr=None):
         """
         Update the IP address, description and shutdown state configuration of Loopback interface
         if no IP address is assigned
@@ -224,6 +254,39 @@ class CMLNetKit(object):
         node_parsed_config.replace_children(r'^interface\sLoopback0', r'no ip address',
                                             r'ip address ' + ip_addr + ' 255.255.255.255')
         node_parsed_config.replace_children(r'^interface\sLoopback0', r'shutdown', r'no shutdown')
+        node_parsed_config.replace_children(r'^interface\sLoopback0', r'description to',
+                                            r'description Loopback interface')
+        node_parsed_config.atomic()
+        node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
+        self._set_node_config(self._get_node_index_by_label(node_label), node_new_config)
+        self.lab_conf_changed = True
+
+    def update_node_loopback_conf_iosxrv(self, node_label=None, ip_addr=None):
+        """
+        Update the IP address, description and shutdown state configuration of Loopback interface
+        if no IP address is assigned
+
+        :param node_label: The node label
+        :type node_label: str
+        :param ip_addr: The IP address that will be assigned to Loopback interface of the device
+        :type ip_addr: str
+        """
+        if node_label is None or ip_addr is None:
+            raise ValueError
+        if type(ip_addr) is not str or type(node_label) is not str:
+            raise TypeError
+
+        node_config = self._get_node_config(self._get_node_index_by_label(node_label))
+        node_parsed_config = CiscoConfParse(node_config.split('\n'))
+
+        # Don't update the interface configuration if IP address is already set
+        if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\sLoopback0')):
+            return
+
+        node_parsed_config.replace_children(r'^interface\sLoopback0', r'no ipv4 address',
+                                            r'ipv4 address ' + ip_addr + ' 255.255.255.255')
+        node_parsed_config.replace_children(r'^interface\sLoopback0', r'shutdown', r'no shutdown',
+                                            excludespec=r'no shutdown')
         node_parsed_config.replace_children(r'^interface\sLoopback0', r'description to',
                                             r'description Loopback interface')
         node_parsed_config.atomic()
