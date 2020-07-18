@@ -22,6 +22,7 @@ class CMLNetKitConfig:
     username = None
     password = None
     ssl_verify = True
+    dry_run = False
 
     # Flag if requested to change "External Connection" objects
     update_bridge = False
@@ -44,6 +45,9 @@ class CMLNetKitConfig:
 
         if args.update_loopback is True:
             self.update_loopback = True
+
+        if args.dry_run is True:
+            self.dry_run = True
 
         # Initialize the variable that stores subnet for adressing Loopback interfaces.
         # We need to check if /32 mask was not provided, the subnet is IPv4, unicast and provided

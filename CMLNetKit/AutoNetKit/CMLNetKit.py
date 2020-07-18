@@ -69,6 +69,9 @@ class CMLNetKit(object):
 
         :raises requests.exceptions.HTTPError: if there was a transport error
         """
+        if self._cmlnetkitconfig.dry_run is True:
+            print("Dry Run mode: No changes applied to CML2 server")
+            return
 
         cl = ClientLibrary(url="https://" + self._cmlnetkitconfig.host, username=self._cmlnetkitconfig.username,
                            password=self._cmlnetkitconfig.password,

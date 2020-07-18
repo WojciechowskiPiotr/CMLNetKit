@@ -27,6 +27,9 @@ def main():
                                   help='Disable the SSL certification verification on the CML2 server',
                                   dest='ssl_verify',
                                   default=True, action="store_false")
+    group_connection.add_argument('--dry-run', help="Don't apply any changes to CML2 server.",
+                                  dest='dry_run',
+                                  default=False, action="store_true")
     group_changes.add_argument('-b',
                                help='Changing all "External Connection" objects configuration to "Bridge"',
                                dest="update_bridge", default=False, action="store_true")
