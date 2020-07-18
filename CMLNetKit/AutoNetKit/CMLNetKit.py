@@ -2,10 +2,10 @@
 # (c) 2020 Piotr Wojciechowski <piotr@it-playground.pl>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-import yaml
-from virl2_client import ClientLibrary
-from ciscoconfparse import CiscoConfParse
 import netaddr
+import yaml
+from ciscoconfparse import CiscoConfParse
+from virl2_client import ClientLibrary
 
 
 class CMLNetKit(object):
