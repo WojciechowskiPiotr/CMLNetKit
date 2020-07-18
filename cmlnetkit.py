@@ -33,6 +33,12 @@ def main():
     group_changes.add_argument('-lo',
                                help='Readdress all Loopback0 interfaces withput IPv4 address',
                                dest="update_loopback", default=False, action="store_true")
+    group_changes.add_argument('-lo_subnet',
+                               help='Subnet for the Loopback ip addresses assignment, must be provided in format as '
+                                    'subnet/mask. If mask not provided default mask for subnet is used.'
+                                    'If none provided the default 10.0.0.0/24 is used. Loopback '
+                                    'addresses are always /32',
+                               dest="loopback_subnet", default="10.0.0.0/24")
 
     CMLNetKit.CMLNetKit(CMLNetKitConfig.CMLNetKitConfig(parser.parse_args()))
 

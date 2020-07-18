@@ -3,6 +3,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 import argparse
+import netaddr
 
 
 class CMLNetKitConfig:
@@ -26,6 +27,7 @@ class CMLNetKitConfig:
     update_bridge = False
     # Flag if requested to change the Loopback interfaces configuration
     update_loopback = False
+    loopback_subnet = None
 
     def __init__(self, args):
         self.host = args.host
@@ -42,3 +44,22 @@ class CMLNetKitConfig:
 
         if args.update_loopback is True:
             self.update_loopback = True
+
+        if type(args.loopback_subnet) is not str:
+            raise TypeError
+        try:
+            prefix = netaddr.IPNetwork(args.loopback_subnet, version=4)
+        except ValueError as e:
+            print("Parameter error: loopback_subnet:", e.data)
+            exit(0)
+        except netaddr.AddrFormatError as e:
+            print("Parameter format error: loopback_subnet: Address format error")
+            exit(0)
+        else:
+            if not prefix.is_unicast():
+                print("Parameter format error: loopback_subnet: Non-unicast address")
+                exit(0)
+            if prefix.prefixlen == 32:
+                print("Parameter format error: loopback_subnet: Host address provided")
+                exit(0)
+            self.loopback_subnet = args.loopback_subnet

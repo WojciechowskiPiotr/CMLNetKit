@@ -147,9 +147,14 @@ class CMLNetKit(object):
         For each node it will call the platform specific method to update Loopback interface address
         from provided subnet using the next available address for each device.
         """
-        ip = netaddr.IPNetwork('10.0.0.0/24')
-        for nodenum, nodedef in enumerate(self.lab_conf["nodes"]):
-            self.update_node_loopback_conf_ios(nodedef.get("label"), ip[nodenum + 1].__str__())
+        ip = netaddr.IPNetwork(self._cmlnetkitconfig.loopback_subnet)
+
+        try:
+            for nodenum, nodedef in enumerate(self.lab_conf["nodes"]):
+                self.update_node_loopback_conf_ios(nodedef.get("label"), ip[nodenum + 1].__str__())
+        except IndexError as e:
+            print("IndexError: loopback_subnet: The subnet is to small to enumerate all Loopback interfaces")
+            exit(0)
 
     def update_node_loopback_conf_ios(self, node_label=None, ip_addr=None):
         """
@@ -168,6 +173,7 @@ class CMLNetKit(object):
 
         node_config = self.get_node_config(self._get_node_index_by_label(node_label))
         node_parsed_config = CiscoConfParse(node_config.split('\n'))
+
         # Don't update the interface configuration if IP address is already set
         if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\sLoopback0')):
             return
