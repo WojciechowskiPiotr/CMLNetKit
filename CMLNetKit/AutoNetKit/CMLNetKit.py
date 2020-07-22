@@ -46,25 +46,25 @@ class CMLNetKit(object):
         # Define functions to call for particular device type identified by node_definition key in the node
         # configuration downloaded from CML2 server. In some cases, we will call the dummy method because the proper
         # method is not yet implemented. In other cases, the same method applies to more than one node type.
-        _node_types_fn = {'update_node_loopback_conf_iosv': self.update_node_loopback_conf_iosv,
-                          'update_node_loopback_conf_csr1000v': self.update_node_loopback_conf_iosv,
-                          'update_node_loopback_conf_iosxrv': self.update_node_loopback_conf_iosxrv,
-                          'update_node_loopback_conf_iosxrv9000': self.update_node_loopback_conf_iosxrv,
-                          'update_node_loopback_conf_nxosv': self.update_node_loopback_conf_iosv,
-                          'update_node_loopback_conf_nxosv9000': self.update_node_loopback_conf_iosv,
-                          'update_node_loopback_conf_iosvl2': self.update_node_loopback_conf_iosv,
-                          'update_node_loopback_conf_asav': self.dummy,
-                          'update_node_loopback_conf_external_connector': self.dummy,
-                          'update_node_management_conf_iosv': self.update_node_management_conf_iosv,
-                          'update_node_management_conf_csr1000v': self.dummy,
-                          'update_node_management_conf_iosxrv': self.dummy,
-                          'update_node_management_conf_iosxrv9000': self.dummy,
-                          'update_node_management_conf_nxosv': self.dummy,
-                          'update_node_management_conf_nxosv9000': self.dummy,
-                          'update_node_management_conf_iosvl2': self.dummy,
-                          'update_node_management_conf_asav': self.dummy,
-                          'update_node_management_conf_external_connector': self.dummy,
-                          }
+        self._node_types_fn = {'update_node_loopback_conf_iosv': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_csr1000v': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_iosxrv': self.update_node_loopback_conf_iosxrv,
+                               'update_node_loopback_conf_iosxrv9000': self.update_node_loopback_conf_iosxrv,
+                               'update_node_loopback_conf_nxosv': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_nxosv9000': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_iosvl2': self.update_node_loopback_conf_iosv,
+                               'update_node_loopback_conf_asav': self.dummy,
+                               'update_node_loopback_conf_external_connector': self.dummy,
+                               'update_node_management_conf_iosv': self.update_node_management_conf_iosv,
+                               'update_node_management_conf_csr1000v': self.dummy,
+                               'update_node_management_conf_iosxrv': self.dummy,
+                               'update_node_management_conf_iosxrv9000': self.dummy,
+                               'update_node_management_conf_nxosv': self.dummy,
+                               'update_node_management_conf_nxosv9000': self.dummy,
+                               'update_node_management_conf_iosvl2': self.dummy,
+                               'update_node_management_conf_asav': self.dummy,
+                               'update_node_management_conf_external_connector': self.dummy,
+                               }
 
         if self._cmlnetkitconfig.lab_id is None:
             self.print_labs()
@@ -284,6 +284,8 @@ class CMLNetKit(object):
                         (nodedef.get("label"), ip.ip.__str__(), ip.netmask.__str__())
                 except TypeError as e:
                     raise TypeError(e)
+                except KeyError as e:
+                    raise KeyError(e)
         except IndexError as e:
             raise IndexError("mgmt-range: Not enough management addresses provided")
 

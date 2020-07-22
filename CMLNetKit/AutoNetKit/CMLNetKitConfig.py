@@ -78,56 +78,57 @@ class CMLNetKitConfig:
 
         # Initialize range of IP addresses for management interfaces and associated subnet mask
         # Catch if provided values are even IP addresses
-        try:
-            if netaddr.IPAddress(args.mgmt_range[0]) > netaddr.IPAddress(args.mgmt_range[1]):
-                self.mgmt_range = netaddr.IPRange(args.mgmt_range[1], args.mgmt_range[0])
-            else:
-                self.mgmt_range = netaddr.IPRange(args.mgmt_range[0], args.mgmt_range[1])
-        except netaddr.AddrFormatError as e:
-            raise ValueError('mgmt-range: %s' % e)
-
-        # Check if the provided range of addresses does not overlap with any of the IPv4 reserved subnets and
-        # each address is the unicast address.
-        for ip_addr in self.mgmt_range:
-            if ip_addr.is_reserved():
-                raise ValueError('mgmt-range: Provided IP addresses overlaps with IPv4 reserved subnets')
-            if ip_addr.is_unicast() is not True:
-                raise ValueError('mgmt-range: Provided IP addresses range is not within the IPv4 '
-                                 'unicast space')
-
-        # If we receive the netmask from commandline argument then we need to check if the netmask
-        # is in correct format, then convert it to prefixlen and store both values in class variables
-        if args.mgmt_netmask:
+        if args.mgmt_range:
             try:
-                if netaddr.IPAddress(args.mgmt_netmask).is_netmask():
-                    try:
-                        t = netaddr.IPNetwork(self.mgmt_range[0])
-                    except netaddr.AddrFormatError as e:
-                        raise ValueError('mgmt-range: %s' % e)
+                if netaddr.IPAddress(args.mgmt_range[0]) > netaddr.IPAddress(args.mgmt_range[1]):
+                    self.mgmt_range = netaddr.IPRange(args.mgmt_range[1], args.mgmt_range[0])
                 else:
-                    raise ValueError('mgmt-netmask: Provided value is not a correct netmask')
-            except ValueError as e:
-                raise ValueError('mgmt-netmask: %s' % e)
-
-            self.mgmt_netmask = args.mgmt_netmask
-            t.netmask = self.mgmt_netmask
-            self.mgmt_prefixlen = t.prefixlen
-        elif args.mgmt_prefixlen:
-            if args.mgmt_prefixlen is 0:
-                raise ValueError('mgmt-prefixlen: argument value cannot be 0')
-            elif args.mgmt_prefixlen in range(1, 33):
-                self.mgmt_prefixlen = args.mgmt_prefixlen
-            else:
-                raise ValueError('mgmt-prefixlen: argument value must be between 1 and 32')
-
-            try:
-                t = netaddr.IPNetwork(self.mgmt_range[0])
+                    self.mgmt_range = netaddr.IPRange(args.mgmt_range[0], args.mgmt_range[1])
             except netaddr.AddrFormatError as e:
                 raise ValueError('mgmt-range: %s' % e)
 
-            t.prefixlen = self.mgmt_prefixlen
-            self.mgmt_netmask = t.netmask.__str__()
-        else:
-            self.mgmt_prefixlen = 24
-            self.mgmt_netmask = "255.255.255.0"
-        self.update_mgmt = True
+            # Check if the provided range of addresses does not overlap with any of the IPv4 reserved subnets and
+            # each address is the unicast address.
+            for ip_addr in self.mgmt_range:
+                if ip_addr.is_reserved():
+                    raise ValueError('mgmt-range: Provided IP addresses overlaps with IPv4 reserved subnets')
+                if ip_addr.is_unicast() is not True:
+                    raise ValueError('mgmt-range: Provided IP addresses range is not within the IPv4 '
+                                     'unicast space')
+
+            # If we receive the netmask from commandline argument then we need to check if the netmask
+            # is in correct format, then convert it to prefixlen and store both values in class variables
+            if args.mgmt_netmask:
+                try:
+                    if netaddr.IPAddress(args.mgmt_netmask).is_netmask():
+                        try:
+                            t = netaddr.IPNetwork(self.mgmt_range[0])
+                        except netaddr.AddrFormatError as e:
+                            raise ValueError('mgmt-range: %s' % e)
+                    else:
+                        raise ValueError('mgmt-netmask: Provided value is not a correct netmask')
+                except ValueError as e:
+                    raise ValueError('mgmt-netmask: %s' % e)
+
+                self.mgmt_netmask = args.mgmt_netmask
+                t.netmask = self.mgmt_netmask
+                self.mgmt_prefixlen = t.prefixlen
+            elif args.mgmt_prefixlen:
+                if args.mgmt_prefixlen is 0:
+                    raise ValueError('mgmt-prefixlen: argument value cannot be 0')
+                elif args.mgmt_prefixlen in range(1, 33):
+                    self.mgmt_prefixlen = args.mgmt_prefixlen
+                else:
+                    raise ValueError('mgmt-prefixlen: argument value must be between 1 and 32')
+
+                try:
+                    t = netaddr.IPNetwork(self.mgmt_range[0])
+                except netaddr.AddrFormatError as e:
+                    raise ValueError('mgmt-range: %s' % e)
+
+                t.prefixlen = self.mgmt_prefixlen
+                self.mgmt_netmask = t.netmask.__str__()
+            else:
+                self.mgmt_prefixlen = 24
+                self.mgmt_netmask = "255.255.255.0"
+            self.update_mgmt = True
