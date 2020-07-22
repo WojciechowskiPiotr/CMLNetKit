@@ -57,7 +57,7 @@ class CMLNetKit(object):
                                'update_node_loopback_conf_external_connector': self.dummy,
                                'update_node_management_conf_iosv': self.update_node_management_conf_iosv,
                                'update_node_management_conf_csr1000v': self.dummy,
-                               'update_node_management_conf_iosxrv': self.dummy,
+                               'update_node_management_conf_iosxrv': self.update_node_management_conf_iosxrv,
                                'update_node_management_conf_iosxrv9000': self.dummy,
                                'update_node_management_conf_nxosv': self.dummy,
                                'update_node_management_conf_nxosv9000': self.dummy,
@@ -279,9 +279,17 @@ class CMLNetKit(object):
 
                 # We find the method to call using the self._node_types_fm dictionary
                 try:
+                    node_config = self._get_node_config(self._get_node_index_by_label(nodedef.get("label")))
+                    node_parsed_config = CiscoConfParse(node_config.split('\n'))
+
                     self._node_types_fn["update_node_management_conf_" + self._get_node_type(
                         self._get_node_index_by_label(nodedef.get("label")))] \
-                        (nodedef.get("label"), ip.ip.__str__(), ip.netmask.__str__())
+                        (node_parsed_config, ip.ip.__str__(), ip.netmask.__str__())
+
+                    node_parsed_config.atomic()
+                    node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
+                    self._set_node_config(self._get_node_index_by_label(nodedef.get("label")), node_new_config)
+                    self.lab_conf_changed = True
                 except TypeError as e:
                     raise TypeError(e)
                 except KeyError as e:
@@ -354,27 +362,27 @@ class CMLNetKit(object):
         self._set_node_config(self._get_node_index_by_label(node_label), node_new_config)
         self.lab_conf_changed = True
 
-    def update_node_management_conf_iosv(self, node_label=None, ip_addr=None, ip_netmask=None):
+    def update_node_management_conf_iosv(self, node_parsed_config=None, ip_addr=None, ip_netmask=None):
         """
         Update the IP address, description and shutdown state configuration of GigabitEthernet0/0 interface
         if no IP address is assigned. There is no dedicated OOB Management interface so we take
         first one. If should be connected to "External Connection" object and common management subnet
 
-        :param node_label: The node label
-        :type node_label: str
+        :param node_parsed_config: The parsed node configuration
+        :type node_parsed_config: CiscoConfParse
         :param ip_addr: The IP address that will be assigned to te interface of the device and subnet mask
         :type ip_addr: str
         :param ip_netmask: The subnet mask in dot notation
         :type ip_netmask: str
         """
 
-        if node_label is None or ip_addr is None or ip_netmask is None:
-            raise ValueError
-        if type(ip_addr) is not str or type(node_label) is not str or type(ip_netmask) is not str:
-            raise TypeError
+        # if node_label is None or ip_addr is None or ip_netmask is None:
+        #     raise ValueError
+        # if type(ip_addr) is not str or type(node_label) is not str or type(ip_netmask) is not str:
+        #     raise TypeError
 
-        node_config = self._get_node_config(self._get_node_index_by_label(node_label))
-        node_parsed_config = CiscoConfParse(node_config.split('\n'))
+        # node_config = self._get_node_config(self._get_node_index_by_label(node_label))
+        # node_parsed_config = CiscoConfParse(node_config.split('\n'))
 
         # Don't update the interface configuration if IP address is already set
         if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\sGigabitEthernet0/0')):
@@ -387,7 +395,31 @@ class CMLNetKit(object):
         node_parsed_config.replace_children(r'^interface\sGigabitEthernet0/0', r'description to',
                                             r'description Management interface')
 
-        node_parsed_config.atomic()
-        node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
-        self._set_node_config(self._get_node_index_by_label(node_label), node_new_config)
-        self.lab_conf_changed = True
+        # node_parsed_config.atomic()
+        # node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
+        # self._set_node_config(self._get_node_index_by_label(node_label), node_new_config)
+        # self.lab_conf_changed = True
+
+    def update_node_management_conf_iosxrv(self, node_parsed_config=None, ip_addr=None, ip_netmask=None):
+        """
+        Update the IP address, description and shutdown state configuration of MgmtEth0/0/CPU0/0 interface
+        if no IP address is assigned. It should be connected to "External Connection" object and common
+        management subnet.
+
+        :param node_parsed_config: The parsed node configuration
+        :type node_parsed_config: CiscoConfParse
+        :param ip_addr: The IP address that will be assigned to te interface of the device and subnet mask
+        :type ip_addr: str
+        :param ip_netmask: The subnet mask in dot notation
+        :type ip_netmask: str
+        """
+        # Don't update the interface configuration if IP address is already set
+        if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\sMgmtEth0/0/CPU0/0')):
+            return
+
+        node_parsed_config.replace_children(r'^interface\sMgmtEth0/0/CPU0/0', r'no ipv4 address',
+                                            r'ipv4 address ' + ip_addr + ' ' + ip_netmask)
+        node_parsed_config.replace_children(r'^interface\sMgmtEth0/0/CPU0/0', r'shutdown', r'no shutdown',
+                                            excludespec=r'no shutdown')
+        node_parsed_config.replace_children(r'^interface\sMgmtEth0/0/CPU0/0', r'description to',
+                                            r'description Management interface')
