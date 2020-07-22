@@ -41,30 +41,30 @@ class CMLNetKit(object):
     def __init__(self, cml_options):
         super(CMLNetKit, self).__init__()
 
+        self._cmlnetkitconfig = cml_options
+
         # Define functions to call for particular device type identified by node_definition key in the node
         # configuration downloaded from CML2 server. In some cases, we will call the dummy method because the proper
         # method is not yet implemented. In other cases, the same method applies to more than one node type.
-        self._node_types_fn = {'update_node_loopback_conf_iosv': self.update_node_loopback_conf_iosv,
-                               'update_node_loopback_conf_csr1000v': self.update_node_loopback_conf_iosv,
-                               'update_node_loopback_conf_iosxrv': self.update_node_loopback_conf_iosxrv,
-                               'update_node_loopback_conf_iosxrv9000': self.update_node_loopback_conf_iosxrv,
-                               'update_node_loopback_conf_nxosv': self.update_node_loopback_conf_iosv,
-                               'update_node_loopback_conf_nxosv9000': self.update_node_loopback_conf_iosv,
-                               'update_node_loopback_conf_iosvl2': self.update_node_loopback_conf_iosv,
-                               'update_node_loopback_conf_asav': self.dummy,
-                               'update_node_loopback_conf_external_connector': self.dummy,
-                               'update_node_management_conf_iosv': self.update_node_management_conf_iosv,
-                               'update_node_management_conf_csr1000v': self.dummy,
-                               'update_node_management_conf_iosxrv': self.dummy,
-                               'update_node_management_conf_iosxrv9000': self.dummy,
-                               'update_node_management_conf_nxosv': self.dummy,
-                               'update_node_management_conf_nxosv9000': self.dummy,
-                               'update_node_management_conf_iosvl2': self.dummy,
-                               'update_node_management_conf_asav': self.dummy,
-                               'update_node_management_conf_external_connector': self.dummy,
-                               }
-
-        self._cmlnetkitconfig = cml_options
+        _node_types_fn = {'update_node_loopback_conf_iosv': self.update_node_loopback_conf_iosv,
+                          'update_node_loopback_conf_csr1000v': self.update_node_loopback_conf_iosv,
+                          'update_node_loopback_conf_iosxrv': self.update_node_loopback_conf_iosxrv,
+                          'update_node_loopback_conf_iosxrv9000': self.update_node_loopback_conf_iosxrv,
+                          'update_node_loopback_conf_nxosv': self.update_node_loopback_conf_iosv,
+                          'update_node_loopback_conf_nxosv9000': self.update_node_loopback_conf_iosv,
+                          'update_node_loopback_conf_iosvl2': self.update_node_loopback_conf_iosv,
+                          'update_node_loopback_conf_asav': self.dummy,
+                          'update_node_loopback_conf_external_connector': self.dummy,
+                          'update_node_management_conf_iosv': self.update_node_management_conf_iosv,
+                          'update_node_management_conf_csr1000v': self.dummy,
+                          'update_node_management_conf_iosxrv': self.dummy,
+                          'update_node_management_conf_iosxrv9000': self.dummy,
+                          'update_node_management_conf_nxosv': self.dummy,
+                          'update_node_management_conf_nxosv9000': self.dummy,
+                          'update_node_management_conf_iosvl2': self.dummy,
+                          'update_node_management_conf_asav': self.dummy,
+                          'update_node_management_conf_external_connector': self.dummy,
+                          }
 
         if self._cmlnetkitconfig.lab_id is None:
             self.print_labs()
@@ -72,14 +72,7 @@ class CMLNetKit(object):
 
         self.lab_download()
 
-        if self._cmlnetkitconfig.update_bridge is True:
-            self.update_bridge()
-
-        if self._cmlnetkitconfig.update_loopback is True:
-            self.update_device_loopback_conf()
-
-        if self._cmlnetkitconfig.update_mgmt is True:
-            self.update_device_management_conf()
+        self.update_devices_confs()
 
         if self.lab_conf_changed is True:
             self.lab_upload()
@@ -234,6 +227,21 @@ class CMLNetKit(object):
         for lab in labs:
             print(lab.id + '\t' + lab.title)
 
+    def update_devices_confs(self):
+        """
+        Iterates over the node lists. For known node types where configuration can be updated
+        it calls other methods
+        """
+
+        if self._cmlnetkitconfig.update_bridge is True:
+            self.update_bridge()
+
+        if self._cmlnetkitconfig.update_loopback is True:
+            self.update_device_loopback_conf()
+
+        if self._cmlnetkitconfig.update_mgmt is True:
+            self.update_device_management_conf()
+
     def update_device_loopback_conf(self):
         """
         Updates the Loopback interfaces configuration for nodes in the lab topology.
@@ -271,12 +279,6 @@ class CMLNetKit(object):
 
                 # We find the method to call using the self._node_types_fm dictionary
                 try:
-                    print(self._get_node_index_by_label(nodedef.get("label")))
-                    print(self._get_node_type(
-                        self._get_node_index_by_label(nodedef.get("label"))))
-                    print(self._node_types_fn["update_node_management_conf_" + self._get_node_type(
-                        self._get_node_index_by_label(nodedef.get("label")))])
-
                     self._node_types_fn["update_node_management_conf_" + self._get_node_type(
                         self._get_node_index_by_label(nodedef.get("label")))] \
                         (nodedef.get("label"), ip.ip.__str__(), ip.netmask.__str__())
@@ -352,7 +354,7 @@ class CMLNetKit(object):
 
     def update_node_management_conf_iosv(self, node_label=None, ip_addr=None, ip_netmask=None):
         """
-        Update the IP address, description and shutdown state configuration of Gigabit0/0 interface
+        Update the IP address, description and shutdown state configuration of GigabitEthernet0/0 interface
         if no IP address is assigned. There is no dedicated OOB Management interface so we take
         first one. If should be connected to "External Connection" object and common management subnet
 
