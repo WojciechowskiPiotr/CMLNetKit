@@ -270,7 +270,9 @@ class CMLNetKit(object):
                     raise TypeError(e)
                 # No key found in self._node_types_fn
                 except KeyError as e:
-                    raise KeyError(e)
+                    # For other than known and specified in self._node_types_fn node types do nothing just ignore
+                    continue
+                    # raise KeyError(e)
                 # Exception from CiscoConfParse constructor
                 except ValueError as e:
                     raise ValueError(e)
@@ -312,7 +314,9 @@ class CMLNetKit(object):
                     raise TypeError(e)
                 # No key found in self._node_types_fn
                 except KeyError as e:
-                    raise KeyError(e)
+                    # For other than known and specified in self._node_types_fn node types do nothing just ignore
+                    continue
+                    # raise KeyError(e)
                 # Exception from CiscoConfParse constructor
                 except ValueError as e:
                     raise ValueError(e)
@@ -325,8 +329,8 @@ class CMLNetKit(object):
         Update the IP address, description and shutdown state configuration of Loopback interface
         if no IP address is assigned
 
-        :param node_label: The node label
-        :type node_label: str
+        :param node_parsed_config: The parsed node configuration
+        :type node_parsed_config: CiscoConfParse
         :param ip_addr: The IP address that will be assigned to Loopback interface of the device
         :type ip_addr: str
         """
@@ -345,8 +349,8 @@ class CMLNetKit(object):
         Update the IP address, description and shutdown state configuration of Loopback interface
         if no IP address is assigned
 
-        :param node_label: The node label
-        :type node_label: str
+        :param node_parsed_config: The parsed node configuration
+        :type node_parsed_config: CiscoConfParse
         :param ip_addr: The IP address that will be assigned to Loopback interface of the device
         :type ip_addr: str
         """
