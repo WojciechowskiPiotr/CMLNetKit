@@ -50,6 +50,11 @@ def main():
                                help='Contiguous range of IP addresses must be provided. As argument values provide '
                                     'first and last IP address of the range',
                                nargs=2, metavar=('MGMT_IP_LOW', "MGMT_IP_HIGH"), dest="mgmt_range")
+    group_changes.add_argument('--peer-subnet',
+                               help='Subnet for the ip addresses assignment for direct connections betweend devices,'
+                                    'must be provided in format as subnet/mask. If mask not provided the /24 is used.'
+                                    'Direct connections betweend devices are addressed with /30 mask',
+                               dest="peer_subnet")
     group_changes_mask_prefixlen = group_changes.add_mutually_exclusive_group()
     group_changes_mask_prefixlen.add_argument('--mgmt-netmask',
                                               help='Subnet mask that needs to be assigned to management interfaces IP '

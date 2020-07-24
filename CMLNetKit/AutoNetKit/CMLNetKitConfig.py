@@ -29,6 +29,7 @@ class CMLNetKitConfig:
     # Flag if requested to change the Loopback interfaces configuration
     update_loopback = False
     loopback_subnet = None
+    peer_subnet = None
     # Flags for management interfaces addressing
     update_mgmt = False  # Will change to True when all management network parameters are correctly set
     mgmt_range = None
@@ -132,3 +133,21 @@ class CMLNetKitConfig:
                 self.mgmt_prefixlen = 24
                 self.mgmt_netmask = "255.255.255.0"
             self.update_mgmt = True
+
+        # Initialize the variable that stores subnet for addressing for directly connected interfaces.
+        # We need to check if /32 mask was not provided, the subnet is IPv4, unicast and provided
+        # in correct CIDR format. In case any requirement is violated the program cannot continue
+        if type(args.peer_subnet) is not str:
+            raise TypeError
+        try:
+            prefix = netaddr.IPNetwork(args.peer_subnet, version=4)
+        except ValueError as e:
+            raise ValueError("peer_subnet:", e.data)
+        except netaddr.AddrFormatError as e:
+            raise ValueError("peer_subnet: Address format error")
+        else:
+            if not prefix.is_unicast():
+                raise ValueError("peer_subnet: Non-unicast address")
+            if prefix.prefixlen == 32:
+                raise ValueError("peer_subnet: Host address provided")
+            self.peer_subnet = args.peer_subnet
