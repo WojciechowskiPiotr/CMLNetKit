@@ -250,15 +250,33 @@ class CMLNetKit(object):
         from provided subnet using the next available address for each device.
         """
         ip = netaddr.IPNetwork(self._cmlnetkitconfig.loopback_subnet)
+
         try:
             for nodenum, nodedef in enumerate(self.lab_conf["nodes"]):
                 # We find the method to call using the self._node_types_fm dictionary
-                self._node_types_fn["update_node_loopback_conf_" + self._get_node_type(
-                    self._get_node_index_by_label(nodedef.get("label")))] \
-                    (nodedef.get("label"), ip[nodenum + 1].__str__())
+                try:
+                    node_config = self._get_node_config(self._get_node_index_by_label(nodedef.get("label")))
+                    node_parsed_config = CiscoConfParse(node_config.split('\n'))
+
+                    self._node_types_fn["update_node_loopback_conf_" + self._get_node_type(
+                        self._get_node_index_by_label(nodedef.get("label")))](node_parsed_config,
+                                                                              ip[nodenum + 1].__str__())
+
+                    node_parsed_config.atomic()
+                    node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
+                    self._set_node_config(self._get_node_index_by_label(nodedef.get("label")), node_new_config)
+                    self.lab_conf_changed = True
+                except TypeError as e:
+                    raise TypeError(e)
+                # No key found in self._node_types_fn
+                except KeyError as e:
+                    raise KeyError(e)
+                # Exception from CiscoConfParse constructor
+                except ValueError as e:
+                    raise ValueError(e)
+
         except IndexError as e:
-            print("IndexError: loopback_subnet: The subnet is to small to enumerate all Loopback interfaces")
-            exit(0)
+            raise IndexError("lo-subnet: Not enough loopback addresses provided")
 
     def update_device_management_conf(self):
         """
@@ -302,7 +320,7 @@ class CMLNetKit(object):
         except IndexError as e:
             raise IndexError("mgmt-range: Not enough management addresses provided")
 
-    def update_node_loopback_conf_iosv(self, node_label=None, ip_addr=None):
+    def update_node_loopback_conf_iosv(self, node_parsed_config=None, ip_addr=None):
         """
         Update the IP address, description and shutdown state configuration of Loopback interface
         if no IP address is assigned
@@ -312,14 +330,6 @@ class CMLNetKit(object):
         :param ip_addr: The IP address that will be assigned to Loopback interface of the device
         :type ip_addr: str
         """
-        if node_label is None or ip_addr is None:
-            raise ValueError
-        if type(ip_addr) is not str or type(node_label) is not str:
-            raise TypeError
-
-        node_config = self._get_node_config(self._get_node_index_by_label(node_label))
-        node_parsed_config = CiscoConfParse(node_config.split('\n'))
-
         # Don't update the interface configuration if IP address is already set
         if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\sLoopback0')):
             return
@@ -329,12 +339,8 @@ class CMLNetKit(object):
         node_parsed_config.replace_children(r'^interface\sLoopback0', r'shutdown', r'no shutdown')
         node_parsed_config.replace_children(r'^interface\sLoopback0', r'description to',
                                             r'description Loopback interface')
-        node_parsed_config.atomic()
-        node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
-        self._set_node_config(self._get_node_index_by_label(node_label), node_new_config)
-        self.lab_conf_changed = True
 
-    def update_node_loopback_conf_iosxrv(self, node_label=None, ip_addr=None):
+    def update_node_loopback_conf_iosxrv(self, node_parsed_config=None, ip_addr=None):
         """
         Update the IP address, description and shutdown state configuration of Loopback interface
         if no IP address is assigned
@@ -344,14 +350,6 @@ class CMLNetKit(object):
         :param ip_addr: The IP address that will be assigned to Loopback interface of the device
         :type ip_addr: str
         """
-        if node_label is None or ip_addr is None:
-            raise ValueError
-        if type(ip_addr) is not str or type(node_label) is not str:
-            raise TypeError
-
-        node_config = self._get_node_config(self._get_node_index_by_label(node_label))
-        node_parsed_config = CiscoConfParse(node_config.split('\n'))
-
         # Don't update the interface configuration if IP address is already set
         if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\sLoopback0')):
             return
@@ -362,10 +360,6 @@ class CMLNetKit(object):
                                             excludespec=r'no shutdown')
         node_parsed_config.replace_children(r'^interface\sLoopback0', r'description to',
                                             r'description Loopback interface')
-        node_parsed_config.atomic()
-        node_new_config = '\n'.join([i for i in node_parsed_config.ioscfg[0:]])
-        self._set_node_config(self._get_node_index_by_label(node_label), node_new_config)
-        self.lab_conf_changed = True
 
     def update_node_management_conf_iosv(self, node_parsed_config=None, ip_addr=None, ip_netmask=None):
         """
