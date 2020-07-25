@@ -18,6 +18,7 @@ class CMLNetKitConfig:
     # Connection definition
     host = None
     lab_id = None
+    list_labs = False
     port = None
     username = None
     password = None
@@ -29,6 +30,8 @@ class CMLNetKitConfig:
     # Flag if requested to change the Loopback interfaces configuration
     update_loopback = False
     loopback_subnet = None
+    # Flag if requested to change interface configuration for directly connected devices
+    update_peer = False
     peer_subnet = None
     # Flags for management interfaces addressing
     update_mgmt = False  # Will change to True when all management network parameters are correctly set
@@ -45,6 +48,9 @@ class CMLNetKitConfig:
 
         if args.lab_id is not None:
             self.lab_id = args.lab_id
+
+        if args.list_labs:
+            self.list_labs = True
 
         if args.update_bridge is True:
             self.update_bridge = True
@@ -137,17 +143,19 @@ class CMLNetKitConfig:
         # Initialize the variable that stores subnet for addressing for directly connected interfaces.
         # We need to check if /32 mask was not provided, the subnet is IPv4, unicast and provided
         # in correct CIDR format. In case any requirement is violated the program cannot continue
-        if type(args.peer_subnet) is not str:
-            raise TypeError
-        try:
-            prefix = netaddr.IPNetwork(args.peer_subnet, version=4)
-        except ValueError as e:
-            raise ValueError("peer_subnet:", e.data)
-        except netaddr.AddrFormatError as e:
-            raise ValueError("peer_subnet: Address format error")
-        else:
-            if not prefix.is_unicast():
-                raise ValueError("peer_subnet: Non-unicast address")
-            if prefix.prefixlen == 32:
-                raise ValueError("peer_subnet: Host address provided")
-            self.peer_subnet = args.peer_subnet
+        if args.peer_subnet:
+            if type(args.peer_subnet) is not str:
+                raise TypeError
+            try:
+                prefix = netaddr.IPNetwork(args.peer_subnet, version=4)
+            except ValueError as e:
+                raise ValueError("peer_subnet:", e.data)
+            except netaddr.AddrFormatError as e:
+                raise ValueError("peer_subnet: Address format error")
+            else:
+                if not prefix.is_unicast():
+                    raise ValueError("peer_subnet: Non-unicast address")
+                if prefix.prefixlen == 32:
+                    raise ValueError("peer_subnet: Host address provided")
+                self.peer_subnet = args.peer_subnet
+            self.update_peer = True

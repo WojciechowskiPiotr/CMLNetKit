@@ -38,6 +38,9 @@ class CMLNetKit(object):
                                        'asav': 'Management0/0',
                                        }
 
+    _node_types_supported = ['iosv', 'csr1000v', 'iosxrv', 'iosxrv9000', 'nxosv', 'nxosv9000', 'asav']
+    _node_types_ignored = ['external_connector', 'iosvl2']
+
     def __init__(self, cml_options):
         super(CMLNetKit, self).__init__()
 
@@ -64,7 +67,18 @@ class CMLNetKit(object):
                                'update_node_management_conf_iosvl2': self.update_node_management_conf_iosvl2,
                                'update_node_management_conf_asav': self.update_node_management_conf_asav,
                                'update_node_management_conf_external_connector': self.dummy,
+                               'update_node_peer_interface_conf_iosv': self.update_node_interface_address_iosv,
+                               'update_node_peer_interface_conf_csr1000v': self.update_node_interface_address_iosv,
+                               'update_node_peer_interface_conf_iosxrv': self.update_node_interface_address_iosxrv,
+                               'update_node_peer_interface_conf_iosxrv9000': self.update_node_interface_address_iosxrv,
+                               'update_node_peer_interface_conf_asav': self.update_node_interface_address_iosv,
+                               'update_node_peer_interface_conf_nxosv': self.update_node_interface_address_iosv,
+                               'update_node_peer_interface_conf_nxosv9000': self.update_node_interface_address_iosv,
                                }
+
+        if self._cmlnetkitconfig.list_labs:
+            self.print_labs()
+            exit(0)
 
         if self._cmlnetkitconfig.lab_id is None:
             self.print_labs()
@@ -161,6 +175,21 @@ class CMLNetKit(object):
             if nodedef.get("id") == node_id:
                 return nodenum
 
+    def _get_interface_name_by_id(self, node_id, iface_id):
+        """
+        Search for the interface in nodes definitions by the id and return the inteface configuration id when found
+
+        :param node_id: Node name
+        :type: node_id: str
+        :param iface_id: Interface id
+        :type: iface_id: str
+        :returns: Interface name
+        :rtype: str
+        """
+        for ifnum, ifdef in enumerate(self.lab_conf['nodes'][node_id]['interfaces']):
+            if ifdef.get("id") == iface_id:
+                return ifdef['label']
+
     def _get_node_config(self, node_index):
         """
         Read startup node configuration from lab configuration
@@ -241,6 +270,9 @@ class CMLNetKit(object):
 
         if self._cmlnetkitconfig.update_mgmt is True:
             self.update_device_management_conf()
+
+        if self._cmlnetkitconfig.update_peer is True:
+            self.update_device_peer_interfaces_conf()
 
     def update_device_loopback_conf(self):
         """
@@ -323,6 +355,60 @@ class CMLNetKit(object):
 
         except IndexError as e:
             raise IndexError("mgmt-range: Not enough management addresses provided")
+
+    def update_device_peer_interfaces_conf(self):
+        """
+        Updates the addresses on interfaces if directly connected devices.
+        """
+        subnets = list(netaddr.IPNetwork(self._cmlnetkitconfig.peer_subnet).subnet(30))
+
+        try:
+            for linknum, link in enumerate(self.lab_conf["links"]):
+                iface_a_name = self._get_interface_name_by_id(self._get_node_index_by_id(link["n1"]), link["i1"])
+                iface_b_name = self._get_interface_name_by_id(self._get_node_index_by_id(link["n2"]), link["i2"])
+
+                # We need to ignore connections to 'external_connector' and 'iosvl2' objects
+                if self._get_node_type(
+                        self._get_node_index_by_id(link['n1'])) in self._node_types_ignored or self._get_node_type(
+                    self._get_node_index_by_id(link['n2'])) in self._node_types_ignored:
+                    continue
+
+                if self._get_node_type(
+                        self._get_node_index_by_id(link["n1"])) in self._node_types_supported:
+                    node_a_config = self._get_node_config(self._get_node_index_by_id(link["n1"]))
+                    node_a_parsed_config = CiscoConfParse(node_a_config.split('\n'))
+
+                    self._node_types_fn["update_node_peer_interface_conf_" + self._get_node_type(
+                        self._get_node_index_by_id(link["n1"]))](node_a_parsed_config, iface_a_name,
+                                                                 subnets[linknum][1].__str__(),
+                                                                 subnets[linknum].netmask.__str__())
+
+                    # self.update_node_interface_address_iosv(node_a_parsed_config, iface_a_name,
+                    #                                         subnets[linknum][1].__str__(),
+                    #                                         subnets[linknum].netmask.__str__())
+                    node_a_parsed_config.atomic()
+                    node_a_new_config = '\n'.join([i for i in node_a_parsed_config.ioscfg[0:]])
+                    self._set_node_config(self._get_node_index_by_id(link["n1"]), node_a_new_config)
+                    self.lab_conf_changed = True
+
+                if self._get_node_type(
+                        self._get_node_index_by_id(link["n2"])) in self._node_types_supported:
+                    node_b_config = self._get_node_config(self._get_node_index_by_id(link["n2"]))
+                    node_b_parsed_config = CiscoConfParse(node_b_config.split('\n'))
+                    # self.update_node_interface_address_iosv(node_b_parsed_config, iface_b_name,
+                    #                                         subnets[linknum][2].__str__(),
+                    #                                         subnets[linknum].netmask.__str__())
+                    self._node_types_fn["update_node_peer_interface_conf_" + self._get_node_type(
+                        self._get_node_index_by_id(link["n2"]))](node_b_parsed_config, iface_b_name,
+                                                                 subnets[linknum][2].__str__(),
+                                                                 subnets[linknum].netmask.__str__())
+
+                    node_b_parsed_config.atomic()
+                    node_b_new_config = '\n'.join([i for i in node_b_parsed_config.ioscfg[0:]])
+                    self._set_node_config(self._get_node_index_by_id(link["n2"]), node_b_new_config)
+                    self.lab_conf_changed = True
+        except IndexError as e:
+            raise IndexError("peer-range: Not enough IP addresses provided")
 
     def update_node_loopback_conf_iosv(self, node_parsed_config=None, ip_addr=None):
         """
@@ -534,3 +620,53 @@ class CMLNetKit(object):
                                             excludespec=r'no shutdown')
         node_parsed_config.replace_children(r'^interface\sManagement0/0', r'description to',
                                             r'description Management interface')
+
+    def update_node_interface_address_iosv(self, node_parsed_config=None, iface_name=None, ip_addr=None,
+                                           ip_netmask=None):
+        """
+        Update the IP address, description and shutdown state configuration of GigabitEthernet0/0 interface
+        if no IP address is assigned. There is no dedicated OOB Management interface so we take
+        first one. If should be connected to "External Connection" object and common management subnet
+
+        :param node_parsed_config: The parsed node configuration
+        :type node_parsed_config: CiscoConfParse
+        :param iface_name: Name of the interface to be updated
+        :type iface_name: str
+        :param ip_addr: The IP address that will be assigned to te interface of the device and subnet mask
+        :type ip_addr: str
+        :param ip_netmask: The subnet mask in dot notation
+        :type ip_netmask: str
+        """
+        # Don't update the interface configuration if IP address is already set
+        if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\s' + iface_name)):
+            return
+
+        node_parsed_config.replace_children(r'^interface\s' + iface_name, r'no ip address',
+                                            r'ip address ' + ip_addr + ' ' + ip_netmask)
+        node_parsed_config.replace_children(r'^interface\s' + iface_name, r'shutdown', r'no shutdown',
+                                            excludespec=r'no shutdown')
+
+    def update_node_interface_address_iosxrv(self, node_parsed_config=None, iface_name=None, ip_addr=None,
+                                           ip_netmask=None):
+        """
+        Update the IP address, description and shutdown state configuration of GigabitEthernet0/0 interface
+        if no IP address is assigned. There is no dedicated OOB Management interface so we take
+        first one. If should be connected to "External Connection" object and common management subnet
+
+        :param node_parsed_config: The parsed node configuration
+        :type node_parsed_config: CiscoConfParse
+        :param iface_name: Name of the interface to be updated
+        :type iface_name: str
+        :param ip_addr: The IP address that will be assigned to te interface of the device and subnet mask
+        :type ip_addr: str
+        :param ip_netmask: The subnet mask in dot notation
+        :type ip_netmask: str
+        """
+        # Don't update the interface configuration if IP address is already set
+        if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\s' + iface_name)):
+            return
+
+        node_parsed_config.replace_children(r'^interface\s' + iface_name, r'no ipv4 address',
+                                            r'ipv4 address ' + ip_addr + ' ' + ip_netmask)
+        node_parsed_config.replace_children(r'^interface\s' + iface_name, r'shutdown', r'no shutdown',
+                                            excludespec=r'no shutdown')
