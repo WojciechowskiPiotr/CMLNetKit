@@ -383,9 +383,6 @@ class CMLNetKit(object):
                                                                  subnets[linknum][1].__str__(),
                                                                  subnets[linknum].netmask.__str__())
 
-                    # self.update_node_interface_address_iosv(node_a_parsed_config, iface_a_name,
-                    #                                         subnets[linknum][1].__str__(),
-                    #                                         subnets[linknum].netmask.__str__())
                     node_a_parsed_config.atomic()
                     node_a_new_config = '\n'.join([i for i in node_a_parsed_config.ioscfg[0:]])
                     self._set_node_config(self._get_node_index_by_id(link["n1"]), node_a_new_config)
@@ -395,9 +392,7 @@ class CMLNetKit(object):
                         self._get_node_index_by_id(link["n2"])) in self._node_types_supported:
                     node_b_config = self._get_node_config(self._get_node_index_by_id(link["n2"]))
                     node_b_parsed_config = CiscoConfParse(node_b_config.split('\n'))
-                    # self.update_node_interface_address_iosv(node_b_parsed_config, iface_b_name,
-                    #                                         subnets[linknum][2].__str__(),
-                    #                                         subnets[linknum].netmask.__str__())
+
                     self._node_types_fn["update_node_peer_interface_conf_" + self._get_node_type(
                         self._get_node_index_by_id(link["n2"]))](node_b_parsed_config, iface_b_name,
                                                                  subnets[linknum][2].__str__(),
