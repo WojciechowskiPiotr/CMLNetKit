@@ -123,3 +123,41 @@ The following features has already been deployed:
  * Adressing Loopback interface
  * Addressing management interfaces
  * Addressing peer-to-peer interfaces
+
+
+Usage examples
+==============
+
+First you need to list available labs on CML2 server
+.. code::
+
+    cmlnetkit.py -H cml.server.address --list-labs
+
+To change the "External Connection" objects configuration to "bridge"
+.. code::
+
+    cmlnetkit.py -H cml.server.address -b
+
+Addressing the Loopback interfaces
+
+.. code::
+
+    cmlnetkit.py -H cml.server.address -lo --lo-subnet 10.0.0.0/24
+
+Addressing the management interfaces
+
+.. code::
+
+    cmlnetkit.py -H cml.server.address -mgmt --mgmt-range 172.16.16.2 172.16.16.25 --mgmt-prefixlen 24
+
+Addressing the direct connections between the simulation devices
+
+.. code::
+
+    cmlnetkit.py -H cml.server.address --peer-subnet 10.100.0.0/22
+
+Everything altogether with SSL verification disabled
+
+.. code::
+
+    cmlnetkit.py -H cml.server.address --no-ssl-verification -lo --lo-subnet 10.0.0.0/24 -mgmt --mgmt-range 172.16.16.2 172.16.16.25 --mgmt-prefixlen 24 --peer-subnet 10.100.0.0/22
