@@ -296,15 +296,15 @@ class CMLNetKit(object):
     def print_lab_ip_addresses(self):
         """
         For selected lab read the configuration file and print to the console information on al addressed
-        L3 interfaces.
         """
 
         self.print_lab_ip_peer_addresses()
+        self.print_lab_ip_loopback_addresses()
+        self.print_lab_ip_management_addresses()
 
     def print_lab_ip_peer_addresses(self):
         """
-        For selected lab read the configuration file and print to the console information on al addressed
-        L3 interfaces.
+        Print to the console information about IP addresses and link of L3 interfaces in the lab.
         """
 
         # For each link we need to store 6 values. We use List of Dictionaries for this. Each link is described by
@@ -375,7 +375,70 @@ class CMLNetKit(object):
                 [r['DeviceA'], r['InterfaceA'], r['IPAddressA'], r['DeviceB'], r['InterfaceB'], r['IPAddressB']])
         print("\nL3 interfaces addressing")
         print(TOutput)
-        print("\n")
+
+    def print_lab_ip_loopback_addresses(self):
+        """
+        Print to the console information about IP addresses assigned to loopback interfaces.
+        """
+        # For each link we need to store 2 values. We use List of Dictionaries for this. Each link is described by
+        # following structure:
+        # {
+        #   Device: String,
+        #   LoopbackIP: String
+        # }
+        TOutput = PrettyTable()
+        TOutput.field_names = ['Device name', 'Loopback IP']
+
+        for nodenum, nodedef in enumerate(self.lab_conf['nodes']):
+
+            if self._get_node_type(nodenum) in self._node_types_supported:
+                interface_record = {'Device': nodedef['label'], 'LoopbackIPAddress': None}
+
+                node_config = self._get_node_config(nodenum)
+                node_parsed_config = CiscoConfParse(node_config.split('\n'))
+
+                if self._iface_ip_addr_defined(node_parsed_config.find_children(r'^interface\sLoopback0')):
+                    interface_record['LoopbackIPAddress'] = self._get_iface_ip_addr(
+                        node_parsed_config.find_children(r'^interface\sLoopback0'))
+                else:
+                    interface_record['LoopbackIPAddress'] = None
+                TOutput.add_row([interface_record['Device'], interface_record['LoopbackIPAddress']])
+
+        print("\nLoopback interfaces addressing")
+        print(TOutput)
+
+    def print_lab_ip_management_addresses(self):
+        """
+        Print to the console information about IP addresses assigned to management interfaces.
+        """
+        # For each link we need to store 2 values. We use List of Dictionaries for this. Each link is described by
+        # following structure:
+        # {
+        #   Device: String,
+        #   ManagementIP: String
+        # }
+        TOutput = PrettyTable()
+        TOutput.field_names = ['Device name', 'Management IP']
+
+        for nodenum, nodedef in enumerate(self.lab_conf['nodes']):
+
+            if self._get_node_type(nodenum) in self._node_types_supported:
+                interface_record = {'Device': nodedef['label'], 'ManagementIPAddress': None}
+
+                node_config = self._get_node_config(nodenum)
+                node_parsed_config = CiscoConfParse(node_config.split('\n'))
+
+                if self._iface_ip_addr_defined(node_parsed_config.find_children(
+                        r'^interface\s' + self._node_management_interface_name[self._get_node_type(nodenum)])):
+                    interface_record['ManagementIPAddress'] = self._get_iface_ip_addr(
+                        node_parsed_config.find_children(
+                            r'^interface\s' + self._node_management_interface_name[self._get_node_type(nodenum)]))
+                else:
+                    interface_record['ManagementIPAddress'] = None
+                TOutput.add_row([interface_record['Device'], interface_record['ManagementIPAddress']])
+
+        print("\nManagement interfaces addressing")
+        print(TOutput)
 
     def update_devices_confs(self):
         """
