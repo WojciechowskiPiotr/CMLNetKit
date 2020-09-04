@@ -19,6 +19,7 @@ class CMLNetKitConfig:
     host = None
     lab_id = None
     list_labs = False
+    list_ips = False
     port = None
     username = None
     password = None
@@ -51,6 +52,9 @@ class CMLNetKitConfig:
 
         if args.list_labs:
             self.list_labs = True
+
+        if args.list_ips:
+            self.list_ips = True
 
         if args.update_bridge is True:
             self.update_bridge = True

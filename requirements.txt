@@ -3,8 +3,4 @@ urllib3
 PyYAML
 ciscoconfparse
 netaddr
-
-
-
-
-
+PTable

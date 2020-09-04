@@ -6,6 +6,7 @@ import netaddr
 import yaml
 from ciscoconfparse import CiscoConfParse
 from virl2_client import ClientLibrary
+from prettytable import PrettyTable
 
 
 class CMLNetKit(object):
@@ -85,6 +86,10 @@ class CMLNetKit(object):
             exit(0)
 
         self.lab_download()
+
+        if self._cmlnetkitconfig.list_ips:
+            self.print_lab_ip_addresses()
+            exit(0)
 
         self.update_devices_confs()
 
@@ -175,6 +180,19 @@ class CMLNetKit(object):
             if nodedef.get("id") == node_id:
                 return nodenum
 
+    def _get_node_label_by_id(self, node_id):
+        """
+        Search for the node in nodes definitions by the id and return the name of node when found
+
+        :param node_id: Node name
+        :type: node_id: str
+        :returns: Array index for the node
+        :rtype: String
+        """
+        for nodenum, nodedef in enumerate(self.lab_conf["nodes"]):
+            if nodedef.get("id") == node_id:
+                return nodedef.get("label")
+
     def _get_interface_name_by_id(self, node_id, iface_id):
         """
         Search for the interface in nodes definitions by the id and return the inteface configuration id when found
@@ -223,8 +241,7 @@ class CMLNetKit(object):
         """
         self.lab_conf["nodes"][node_index]["configuration"] = node_config
 
-    @staticmethod
-    def _iface_ip_addr_defined(iface_conf=None):
+    def _iface_ip_addr_defined(self, iface_conf=None):
         """
         Checks if IP address is defined in the provided interface configuration
 
@@ -234,11 +251,31 @@ class CMLNetKit(object):
         :rtype: Bool
         """
         if iface_conf is None:
-            iface_conf = []
+            return False
         for config_line in iface_conf:
-            if "no ip address" or "no ipv4 address" in config_line:
+            if "no ip address" in config_line:
+                return False
+            if "no ipv4 address" in config_line:
                 return False
         return True
+
+    def _get_iface_ip_addr(self, iface_conf=None):
+        """
+        Returns IP address defined in the provided interface configuration
+
+        :param iface_conf: List of interface configuration lines
+        :type iface_conf: list
+        :return: IP address and netmask of interface or None if no IP address is defined
+        :rtype: netaddr.IPNetwork or None
+        """
+        if not self._iface_ip_addr_defined(iface_conf):
+            return None
+        for config_line in iface_conf:
+            if "ip address" in config_line:
+                return netaddr.IPNetwork(config_line.lstrip().split(' ')[2] + '/' + config_line.lstrip().split(' ')[3])
+            if "ipv4 address" in config_line:
+                return netaddr.IPNetwork(config_line.lstrip().split(' ')[2] + '/' + config_line.lstrip().split(' ')[3])
+        return None
 
     def print_labs(self):
         """
@@ -255,6 +292,90 @@ class CMLNetKit(object):
         print('\nLab ID\tLab Title')
         for lab in labs:
             print(lab.id + '\t' + lab.title)
+
+    def print_lab_ip_addresses(self):
+        """
+        For selected lab read the configuration file and print to the console information on al addressed
+        L3 interfaces.
+        """
+
+        self.print_lab_ip_peer_addresses()
+
+    def print_lab_ip_peer_addresses(self):
+        """
+        For selected lab read the configuration file and print to the console information on al addressed
+        L3 interfaces.
+        """
+
+        # For each link we need to store 6 values. We use List of Dictionaries for this. Each link is described by
+        # following structure:
+        # {
+        #   DeviceA: String,
+        #   DeviceB: String,
+        #   InterfaceA: String,
+        #   InterfaceB: String,
+        #   IPAddressA: netaddr.IPNetwork,
+        #   IPAddressB: netaddr.IPNetwork
+        # }
+        links_database = []
+
+        try:
+            for linknum, link in enumerate(self.lab_conf["links"]):
+                # We need to ignore connections to 'external_connector' and 'iosvl2' objects and continue to the
+                # next object on list
+                if self._get_node_type(
+                        self._get_node_index_by_id(link['n1'])) in self._node_types_ignored or self._get_node_type(
+                    self._get_node_index_by_id(link['n2'])) in self._node_types_ignored:
+                    continue
+
+                link_record = {
+                    'InterfaceA': self._get_interface_name_by_id(self._get_node_index_by_id(link["n1"]), link["i1"]),
+                    'InterfaceB': self._get_interface_name_by_id(self._get_node_index_by_id(link["n2"]), link["i2"]),
+                    'DeviceA': self._get_node_label_by_id(link["n1"]),
+                    'DeviceB': self._get_node_label_by_id(link["n2"]),
+                    'IPAddressA': None,
+                    'IPAddressB': None,
+                }
+
+                if self._get_node_type(
+                        self._get_node_index_by_id(link["n1"])) in self._node_types_supported:
+                    node_config = self._get_node_config(self._get_node_index_by_id(link["n1"]))
+                    node_parsed_config = CiscoConfParse(node_config.split('\n'))
+
+                    if self._iface_ip_addr_defined(
+                            node_parsed_config.find_children(
+                                r'^interface\s' + self._get_interface_name_by_id(self._get_node_index_by_id(link["n1"]),
+                                                                                 link["i1"]))):
+                        link_record['IPAddressA'] = self._get_iface_ip_addr(
+                            node_parsed_config.find_children(
+                                r'^interface\s' + self._get_interface_name_by_id(self._get_node_index_by_id(link["n1"]),
+                                                                                 link["i1"])))
+
+                if self._get_node_type(
+                        self._get_node_index_by_id(link["n2"])) in self._node_types_supported:
+                    node_config = self._get_node_config(self._get_node_index_by_id(link["n2"]))
+                    node_parsed_config = CiscoConfParse(node_config.split('\n'))
+                    if self._iface_ip_addr_defined(
+                            node_parsed_config.find_children(
+                                r'^interface\s' + self._get_interface_name_by_id(self._get_node_index_by_id(link["n2"]),
+                                                                                 link["i2"]))):
+                        link_record['IPAddressB'] = self._get_iface_ip_addr(
+                            node_parsed_config.find_children(
+                                r'^interface\s' + self._get_interface_name_by_id(self._get_node_index_by_id(link["n2"]),
+                                                                                 link["i2"])))
+
+                links_database.append(link_record)
+        except IndexError as e:
+            raise IndexError("peer-range: Not enough IP addresses provided")
+
+        TOutput = PrettyTable()
+        TOutput.field_names = ['Device A', 'Interface A', 'IP Address A', 'Device B', 'Interface B', 'IP Address B']
+        for r in links_database:
+            TOutput.add_row(
+                [r['DeviceA'], r['InterfaceA'], r['IPAddressA'], r['DeviceB'], r['InterfaceB'], r['IPAddressB']])
+        print("\nL3 interfaces addressing")
+        print(TOutput)
+        print("\n")
 
     def update_devices_confs(self):
         """
@@ -642,7 +763,7 @@ class CMLNetKit(object):
                                             excludespec=r'no shutdown')
 
     def update_node_interface_address_iosxrv(self, node_parsed_config=None, iface_name=None, ip_addr=None,
-                                           ip_netmask=None):
+                                             ip_netmask=None):
         """
         Update the IP address, description and shutdown state configuration of GigabitEthernet0/0 interface
         if no IP address is assigned. There is no dedicated OOB Management interface so we take

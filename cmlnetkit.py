@@ -18,6 +18,9 @@ def main():
                                   help='Lab ID')
     group_connection.add_argument('--list-labs', dest='list_labs',
                                   help='List the ID of existing labs', default=False, action="store_true")
+    group_connection.add_argument('--list-ips', dest='list_ips',
+                                  help='List the IP addresses configured on L3 links', default=False,
+                                  action="store_true")
     group_connection.add_argument('-P', '--port', type=int, help='CML 2.0 API port (default 443)', dest='port',
                                   default=443)
     group_connection.add_argument('-u', '--username', type=str, help='CML 2.0 API username (default "virl2")',
