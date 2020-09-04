@@ -59,7 +59,7 @@ class CMLNetKitConfig:
         if args.update_bridge is True:
             self.update_bridge = True
 
-        if args.update_loopback is True:
+        if args.loopback_subnet:
             self.update_loopback = True
 
         if args.dry_run is True:

@@ -38,19 +38,12 @@ def main():
     group_changes.add_argument('-b',
                                help='Changing all "External Connection" objects configuration to "Bridge"',
                                dest="update_bridge", default=False, action="store_true")
-    group_changes.add_argument('-lo',
-                               help='Readdress all Loopback0 interfaces without IPv4 address',
-                               dest="update_loopback", default=False, action="store_true")
     group_changes.add_argument('--lo-subnet',
                                help='Subnet for the Loopback ip addresses assignment, must be provided in format as '
                                     'subnet/mask. If mask not provided default mask for subnet is used.'
                                     'If none provided the default 10.0.0.0/24 is used. Loopback '
                                     'addresses are always /32',
                                dest="loopback_subnet", default="10.0.0.0/24")
-    group_changes.add_argument('-mgmt',
-                               help='Readdress all management interfaces without IPv4 address. If device do not'
-                                    'have dedicated management interface then first GigabitEthernet is used.',
-                               dest="update_mgmt", default=False, action="store_true")
     group_changes.add_argument('--mgmt-range',
                                help='Contiguous range of IP addresses must be provided. As argument values provide '
                                     'first and last IP address of the range',
