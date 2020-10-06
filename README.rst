@@ -20,12 +20,6 @@ the interface IP address, the loopback interfaces addressing, routing protocols,
 exist in Cisco Modeling Labs 2.0, aka. Cisco VIRL2 requiring a manual configuration of every essential feature. The
 CMLNetKit brings some of the AutoNetKit features back to CML2.0
 
-WARNING
-=======
-
-The is and early development version. Use at your own risk!
-
-
 Usage
 =====
 
@@ -114,6 +108,8 @@ The following features has already been deployed:
  * Addressing Loopback interface
  * Addressing management interfaces
  * Addressing peer-to-peer interfaces
+
+CMLNetKit does not modify the provided source lab topology, instead it creates new lab using the same title.
 
 Management interfaces
 ---------------------
