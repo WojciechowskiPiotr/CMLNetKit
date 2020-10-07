@@ -5,6 +5,9 @@ CMLNetKit
 .. image:: http://img.shields.io/badge/license-GPLv3-blue.svg
    :target: https://www.gnu.org/copyleft/gpl.html
    :alt: License
+.. image:: https://static.production.devnetcloud.com/codeexchange/assets/images/devnet-published.svg
+   :target: https://developer.cisco.com/codeexchange/github/repo/WojciechowskiPiotr/CMLNetKit
+   :alt: DevNet Code Exchange
 
 .. contents::
 
