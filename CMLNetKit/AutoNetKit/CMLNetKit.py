@@ -287,7 +287,7 @@ class CMLNetKit(object):
         cl = ClientLibrary(url="https://" + self._cmlnetkitconfig.host, username=self._cmlnetkitconfig.username,
                            password=self._cmlnetkitconfig.password,
                            ssl_verify=self._cmlnetkitconfig.ssl_verify)
-        cl.wait_for_lld_connected()
+        cl.is_system_ready(wait=True)
         labs = cl.all_labs()
         print('\nLab ID\tLab Title')
         for lab in labs:
