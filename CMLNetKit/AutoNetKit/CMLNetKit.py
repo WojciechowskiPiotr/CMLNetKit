@@ -119,7 +119,7 @@ class CMLNetKit(object):
         cl = ClientLibrary(url="https://" + self._cmlnetkitconfig.host, username=self._cmlnetkitconfig.username,
                            password=self._cmlnetkitconfig.password,
                            ssl_verify=self._cmlnetkitconfig.ssl_verify)
-        cl.wait_for_lld_connected()
+        # cl.wait_for_lld_connected()
         try:
             self.lab_handler = cl.join_existing_lab(self._cmlnetkitconfig.lab_id)
             self.lab_conf = yaml.safe_load(self.lab_handler.download())
@@ -140,7 +140,7 @@ class CMLNetKit(object):
         cl = ClientLibrary(url="https://" + self._cmlnetkitconfig.host, username=self._cmlnetkitconfig.username,
                            password=self._cmlnetkitconfig.password,
                            ssl_verify=self._cmlnetkitconfig.ssl_verify)
-        cl.wait_for_lld_connected()
+        # cl.wait_for_lld_connected()
         self.lab_conf = cl.import_lab(topology=yaml.dump(self.lab_conf), title=self.lab_conf["lab"]["title"])
 
     def update_bridge(self):
@@ -287,7 +287,7 @@ class CMLNetKit(object):
         cl = ClientLibrary(url="https://" + self._cmlnetkitconfig.host, username=self._cmlnetkitconfig.username,
                            password=self._cmlnetkitconfig.password,
                            ssl_verify=self._cmlnetkitconfig.ssl_verify)
-        cl.wait_for_lld_connected()
+        # cl.wait_for_lld_connected()
         labs = cl.all_labs()
         print('\nLab ID\tLab Title')
         for lab in labs:
