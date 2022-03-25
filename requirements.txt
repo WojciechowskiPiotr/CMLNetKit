@@ -4,4 +4,5 @@ PyYAML~=5.4.1
 ciscoconfparse~=1.5.46
 netaddr~=0.8.0
 PTable
-argparse
+argparse~=1.4.0
+prettytable
