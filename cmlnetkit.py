@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # (c) 2020 Piotr Wojciechowski <piotr@it-playground.pl>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-import argparse
+from argparse import ArgumentParser
 
 from CMLNetKit.AutoNetKit import CMLNetKit
 from CMLNetKit.AutoNetKit import CMLNetKitConfig
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
 
     group_connection = parser.add_argument_group("Connection options")
     group_changes = parser.add_argument_group("Configuration changes")
