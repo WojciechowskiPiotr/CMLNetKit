@@ -19,6 +19,8 @@ What is CMLNetKit?
 CMLNetKit is an application for automatic pre-configuration of nodes in
 Cisco Modeling Labs 2.0
 
+This version has been tested with Python 3.10 and CML2.3.
+
 In the Cisco VIRL, the most valuable feature is AutoNetKit.
 It creates the initial configuration of simulated devices, including
 the interface IP address, the loopback interfaces addressing,

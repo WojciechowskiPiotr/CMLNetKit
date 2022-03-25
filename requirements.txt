@@ -1,4 +1,4 @@
-virl2-client
+virl2-client==2.3.0
 urllib3
 PyYAML~=5.4.1
 ciscoconfparse~=1.5.46
