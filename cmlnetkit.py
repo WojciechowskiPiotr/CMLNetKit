@@ -72,7 +72,7 @@ def main():
                                               dest="mgmt_prefixlen", type=int)
     if len(sys.argv) < 2:
         parser.print_help()
-        sys.exit(1)
+        sys.exit(0)
 
     p = parser.parse_args()
     if (p.mgmt_netmask or p.mgmt_prefixlen) and not p.mgmt_range:
