@@ -125,7 +125,7 @@ class CMLNetKitConfig:
                 t.netmask = self.mgmt_netmask
                 self.mgmt_prefixlen = t.prefixlen
             elif args.mgmt_prefixlen:
-                if args.mgmt_prefixlen is 0:
+                if args.mgmt_prefixlen == 0:
                     raise ValueError('mgmt-prefixlen: argument value cannot be 0')
                 elif args.mgmt_prefixlen in range(1, 33):
                     self.mgmt_prefixlen = args.mgmt_prefixlen

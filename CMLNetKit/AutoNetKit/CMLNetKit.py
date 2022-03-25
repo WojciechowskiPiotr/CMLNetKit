@@ -24,7 +24,7 @@ class CMLNetKit(object):
     lab_conf_changed = False
 
     # Some static definitions
-    _node_types = ['iosv', 'csr1000v', 'iosxrv', 'iosxrv9000', 'nxosv', 'nxosv9000']
+    _node_types = ['iosv', 'csr1000v', 'iosxrv', 'iosxrv9000', 'nxosv', 'nxosv9000', 'cat8000v']
     _node_iosv_fn = 'update_node_loopback_conf_iosv'
     _node_csr1000v_fn = 'update_node_loopback_conf_csr1000v'
     _node_types_fn = {}
@@ -37,9 +37,10 @@ class CMLNetKit(object):
                                        'nxosv9000': 'mgmt0',
                                        'iosvl2': 'GigabitEthernet0/0',
                                        'asav': 'Management0/0',
+                                       'cat8000v': 'GigabitEthernet1',
                                        }
 
-    _node_types_supported = ['iosv', 'csr1000v', 'iosxrv', 'iosxrv9000', 'nxosv', 'nxosv9000', 'asav']
+    _node_types_supported = ['iosv', 'csr1000v', 'iosxrv', 'iosxrv9000', 'nxosv', 'nxosv9000', 'asav', 'cat8000v']
     _node_types_ignored = ['external_connector', 'iosvl2']
 
     def __init__(self, cml_options):
@@ -58,6 +59,7 @@ class CMLNetKit(object):
                                'update_node_loopback_conf_nxosv9000': self.update_node_loopback_conf_iosv,
                                'update_node_loopback_conf_iosvl2': self.update_node_loopback_conf_iosv,
                                'update_node_loopback_conf_asav': self.dummy,
+                               'update_node_loopback_conf_cat8000v': self.update_node_loopback_conf_iosv,
                                'update_node_loopback_conf_external_connector': self.dummy,
                                'update_node_management_conf_iosv': self.update_node_management_conf_iosv,
                                'update_node_management_conf_csr1000v': self.update_node_management_conf_csr1000v,
@@ -67,6 +69,7 @@ class CMLNetKit(object):
                                'update_node_management_conf_nxosv9000': self.update_node_management_conf_nxosv,
                                'update_node_management_conf_iosvl2': self.update_node_management_conf_iosvl2,
                                'update_node_management_conf_asav': self.update_node_management_conf_asav,
+                               'update_node_management_conf_ccat8000v': self.update_node_management_conf_csr1000v,
                                'update_node_management_conf_external_connector': self.dummy,
                                'update_node_peer_interface_conf_iosv': self.update_node_interface_address_iosv,
                                'update_node_peer_interface_conf_csr1000v': self.update_node_interface_address_iosv,
@@ -75,6 +78,7 @@ class CMLNetKit(object):
                                'update_node_peer_interface_conf_asav': self.update_node_interface_address_iosv,
                                'update_node_peer_interface_conf_nxosv': self.update_node_interface_address_iosv,
                                'update_node_peer_interface_conf_nxosv9000': self.update_node_interface_address_iosv,
+                               'update_node_peer_interface_conf_cat8000v': self.update_node_interface_address_iosv,
                                }
 
         if self._cmlnetkitconfig.list_labs:

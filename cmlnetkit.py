@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 # (c) 2020 Piotr Wojciechowski <piotr@it-playground.pl>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-import argparse
+import sys
+from argparse import ArgumentParser
 
 from CMLNetKit.AutoNetKit import CMLNetKit
 from CMLNetKit.AutoNetKit import CMLNetKitConfig
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser(epilog="Usage example: cmlnetkit.py -H cml.server.address -l abc123 --no-ssl-verification "
+                                   "-lo --lo-subnet 10.0.0.0/24 -mgmt --mgmt-range 172.16.16.2 172.16.16.25 "
+                                   "--mgmt-prefixlen 24 --peer-subnet 10.100.0.0/22")
 
     group_connection = parser.add_argument_group("Connection options")
     group_changes = parser.add_argument_group("Configuration changes")
@@ -67,6 +70,9 @@ def main():
                                                    'between 0 and 32. If neither -mgmt-netmask nor -mgmt-prefixlen is '
                                                    'provided then /24 prefixlen (mask of 255.255.255.0) is assigned.',
                                               dest="mgmt_prefixlen", type=int)
+    if len(sys.argv) < 2:
+        parser.print_help()
+        sys.exit(0)
 
     p = parser.parse_args()
     if (p.mgmt_netmask or p.mgmt_prefixlen) and not p.mgmt_range:
