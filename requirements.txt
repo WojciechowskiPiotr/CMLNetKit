@@ -1,7 +1,7 @@
-virl2-client==2.3.0
+virl2-client==2.5.0
 urllib3
 PyYAML==6.0
-ciscoconfparse==1.6.40
+ciscoconfparse==1.7.18
 netaddr~=0.8.0
 PTable
 argparse~=1.4.0

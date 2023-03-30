@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# (c) 2020 Piotr Wojciechowski <piotr@it-playground.pl>
+# (c) 2020-2023 Piotr Wojciechowski <piotr@it-playground.pl>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 import sys
 from argparse import ArgumentParser
@@ -10,7 +10,7 @@ from CMLNetKit.AutoNetKit import CMLNetKitConfig
 
 def main():
     parser = ArgumentParser(epilog="Usage example: cmlnetkit.py -H cml.server.address -l abc123 --no-ssl-verification "
-                                   "-lo --lo-subnet 10.0.0.0/24 -mgmt --mgmt-range 172.16.16.2 172.16.16.25 "
+                                   "--lo-subnet 10.0.0.0/24 --mgmt-range 172.16.16.2 172.16.16.25 "
                                    "--mgmt-prefixlen 24 --peer-subnet 10.100.0.0/22")
 
     group_connection = parser.add_argument_group("Connection options")
